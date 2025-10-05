@@ -22,12 +22,22 @@
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
+    // Inisialisasi peta
     const map = L.map('map').setView([-0.5, 117.15], 12);
 
+    // Base map dari OpenStreetMap
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
       attribution: '© OpenStreetMap contributors'
     }).addTo(map);
+
+    // === ICON untuk Gardu Listrik ===
+    const garduIcon = L.icon({
+      iconUrl: 'https://cdn-icons-png.flaticon.com/512/252/252025.png',
+      iconSize: [35, 35],      // Ukuran marker
+      iconAnchor: [17, 34],    // Titik tengah marker
+      popupAnchor: [0, -30]    // Posisi popup
+    });
 
     // === Ambil file GeoJSON dari GitHub ===
     fetch('https://raw.githubusercontent.com/RiendraRamadhan/SIG_WEB.github.io/main/GARDULISTRIKPT.geojson')
@@ -35,19 +45,13 @@
       .then(data => {
         console.log("✅ Data gardu terbaca:", data);
         L.geoJSON(data, {
-          pointToLayer: (feature, latlng) =>
-            L.circleMarker(latlng, {
-              radius: 7,
-              fillColor: "red",
-              color: "#fff",
-              weight: 1,
-              opacity: 1,
-              fillOpacity: 0.9
-            }).bindPopup(`
-              <b>Nama Gardu:</b> ${feature.properties.Nama_Gardu || '-'}<br>
-              <b>Kapasitas:</b> ${feature.properties.Kapasitas || '-'}<br>
-              <b>Kecamatan:</b> ${feature.properties.Kecamatan || '-'}
-            `)
+          pointToLayer: (feature, latlng) => 
+            L.marker(latlng, { icon: garduIcon })
+              .bindPopup(`
+                <b>Nama Gardu:</b> ${feature.properties.Nama_Gardu || '-'}<br>
+                <b>Kapasitas:</b> ${feature.properties.Kapasitas || '-'}<br>
+                <b>Kecamatan:</b> ${feature.properties.Kecamatan || '-'}
+              `)
         }).addTo(map);
       })
       .catch(err => console.error("❌ ERROR:", err));
