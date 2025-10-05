@@ -8,7 +8,7 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 }).addTo(map);
 
 // Base URL GitHub Raw (root repo)
-const baseURL = "https://raw.githubusercontent.com/RiendraRamadhan/SIG_WEB.github.io/main/";
+const baseURL = "https://raw.githubusercontent.com/RiendraRamadhan/SIG_WEB.github.io";
 
 // ================== ADMINISTRASI ==================
 fetch(baseURL + "ADMINISTRASIKECAMATAN.geojson")
@@ -62,3 +62,4 @@ fetch(baseURL + "heatmapbackground.geojson")
     L.heatLayer(heatPoints, { radius: 25, blur: 15, maxZoom: 17 }).addTo(map);
   })
   .catch(err => console.error("Gagal memuat HEATMAP:", err));
+
