@@ -3,10 +3,17 @@
 <head>
   <meta charset="utf-8">
   <title>⚡ WebGIS Gardu Listrik Kota Samarinda</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Leaflet Core CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-  <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet-measure/dist/leaflet-measure.css" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet-search@2.9.8/dist/leaflet-search.min.css" />
+  
+  <!-- Plugin CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.locatecontrol/dist/L.Control.Locate.min.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-measure-path/leaflet-measure-path.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-search@3.0.9/dist/leaflet-search.min.css">
+
   <link rel="stylesheet" href="style.css">
 </head>
 
@@ -15,10 +22,14 @@
   <main><div id="map"></div></main>
   <footer>© 2025 Riendra Ramadhan | Data: PLN & BPS Samarinda</footer>
 
+  <!-- Leaflet Core JS -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <!-- Plugin JS -->
   <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
-  <script src="https://unpkg.com/leaflet-measure/dist/leaflet-measure.js"></script>
-  <script src="https://unpkg.com/leaflet-search@2.9.8/dist/leaflet-search.min.js"></script>
+  <script src="https://unpkg.com/leaflet.locatecontrol/dist/L.Control.Locate.min.js"></script>
+  <script src="https://unpkg.com/leaflet-measure-path/leaflet-measure-path.js"></script>
+  <script src="https://unpkg.com/leaflet-search@3.0.9/dist/leaflet-search.min.js"></script>
 
   <script>
     // === Inisialisasi Peta ===
@@ -26,7 +37,6 @@
 
     // === Basemap ===
     const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
       attribution: '© OpenStreetMap contributors'
     }).addTo(map);
 
@@ -44,14 +54,12 @@
       shadowSize: [41, 41]
     });
 
-    // === Layer Gardu Listrik ===
-    let garduLayer;
-
+    // === Ambil Data GeoJSON ===
     fetch('https://raw.githubusercontent.com/RiendraRamadhan/SIG_WEB.github.io/main/GARDULISTRIKPT.geojson')
       .then(res => res.json())
       .then(data => {
-        garduLayer = L.geoJSON(data, {
-          pointToLayer: (feature, latlng) => L.marker([latlng.lat, latlng.lng], { icon: garduIcon }),
+        const garduLayer = L.geoJSON(data, {
+          pointToLayer: (feature, latlng) => L.marker(latlng, { icon: garduIcon }),
           onEachFeature: (feature, layer) => {
             layer.bindPopup(`
               <b>Nama Gardu:</b> ${feature.properties.NAMOBJ}<br>
@@ -61,61 +69,59 @@
 
             // Highlight saat hover
             layer.on('mouseover', function () {
-              this.openPopup();
               this.setIcon(new L.Icon({
                 iconUrl: 'https://cdn-icons-png.flaticon.com/512/252/252025.png',
                 iconSize: [30, 30],
                 iconAnchor: [15, 30]
               }));
+              this.openPopup();
             });
-
             layer.on('mouseout', function () {
-              this.closePopup();
               this.setIcon(garduIcon);
+              this.closePopup();
             });
           }
         }).addTo(map);
 
-        // === Layer Search (Cari Gardu berdasarkan Nama)
+        // === Layer Search ===
         const searchControl = new L.Control.Search({
           layer: garduLayer,
           propertyName: 'NAMOBJ',
-          zoom: 16,
-          initial: false,
-          hideMarkerOnCollapse: true
+          zoom: 15,
+          textPlaceholder: 'Cari nama gardu...',
+          marker: false,
         });
         map.addControl(searchControl);
-      });
 
-    // === Layer Control (Visible toggle) ===
-    const baseMaps = {
-      "OpenStreetMap": osm,
-      "Satelit": satellite
-    };
+        // === Layer Control ===
+        const baseMaps = {
+          "OpenStreetMap": osm,
+          "Citra Satelit": satellite
+        };
+        const overlayMaps = {
+          "Gardu Listrik": garduLayer
+        };
+        L.control.layers(baseMaps, overlayMaps, { collapsed: false }).addTo(map);
+      })
+      .catch(err => console.error("❌ ERROR:", err));
 
-    const overlayMaps = {
-      "Gardu Listrik": garduLayer
-    };
-
-    L.control.layers(baseMaps, overlayMaps).addTo(map);
-
-    // === Address Search (Nominatim) ===
+    // === Address Search ===
     L.Control.geocoder({
-      defaultMarkGeocode: true,
-      position: 'topleft'
+      position: 'topleft',
+      placeholder: 'Cari alamat...'
     }).addTo(map);
 
-    // === Geolocation (Temukan posisi pengguna) ===
-    map.locate({ setView: false });
-    L.control.locate = function() {
-      map.locate({ setView: true, maxZoom: 16 });
-    };
+    // === Geolocation ===
+    L.control.locate({
+      position: 'topleft',
+      strings: { title: "Temukan Lokasi Saya" },
+      flyTo: true
+    }).addTo(map);
 
     // === Measure Tool ===
-    L.control.measure({
-      primaryLengthUnit: 'meters',
-      secondaryLengthUnit: 'kilometers',
-      primaryAreaUnit: 'sqmeters'
+    L.control.measurePath({
+      showClearControl: true,
+      showUnitControl: true
     }).addTo(map);
   </script>
 </body>
