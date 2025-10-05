@@ -1,0 +1,11 @@
+{
+"type": "FeatureCollection",
+"name": "GARDULISTRIKPT",
+"crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } },
+"features": [
+{ "type": "Feature", "properties": { "NAMOBJ": "Gardu Induk Harapanbaru", "JGLGRL": 1, "FCODE": null, "REMARK": "Gardu Induk", "SRS_ID": null, "LCODE": "HB0020", "METADATA": null }, "geometry": { "type": "Point", "coordinates": [ 117.10533519, -0.547072819999926, 1.46469999999681 ] } },
+{ "type": "Feature", "properties": { "NAMOBJ": "Gardu Induk Sambutan", "JGLGRL": 1, "FCODE": null, "REMARK": "Gardu Induk", "SRS_ID": null, "LCODE": "HB0020", "METADATA": null }, "geometry": { "type": "Point", "coordinates": [ 117.214360280000051, -0.52534860999998, 3.523600000000442 ] } },
+{ "type": "Feature", "properties": { "NAMOBJ": "Gardu Induk Tengkawang", "JGLGRL": 1, "FCODE": null, "REMARK": "Gardu Induk", "SRS_ID": null, "LCODE": "HB0020", "METADATA": null }, "geometry": { "type": "Point", "coordinates": [ 117.114056982000079, -0.501608959999942, 20.7356 ] } },
+{ "type": "Feature", "properties": { "NAMOBJ": "Gardu PLN Benanga", "JGLGRL": 1, "FCODE": null, "REMARK": "Gardu Induk", "SRS_ID": null, "LCODE": "HB0020", "METADATA": null }, "geometry": { "type": "Point", "coordinates": [ 117.192702033000046, -0.411284984999952, 32.649000000004889 ] } }
+]
+}
