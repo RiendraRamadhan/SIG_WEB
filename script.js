@@ -1,14 +1,14 @@
-// Inisialisasi Peta
+// Inisialisasi peta
 var map = L.map('map').setView([-0.502, 117.153], 12);
 
 // Basemap
-var basemap = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   maxZoom: 19,
   attribution: '&copy; OpenStreetMap contributors'
 }).addTo(map);
 
-// Base URL GitHub raw
-const baseURL = "https://raw.githubusercontent.com/RiendraRamadhan/SIG_WEB/main/data/";
+// Base URL GitHub Raw (root repo)
+const baseURL = "https://raw.githubusercontent.com/RiendraRamadhan/SIG_WEB.github.io/main/";
 
 // ================== ADMINISTRASI ==================
 fetch(baseURL + "ADMINISTRASIKECAMATAN.geojson")
@@ -17,7 +17,8 @@ fetch(baseURL + "ADMINISTRASIKECAMATAN.geojson")
     L.geoJSON(data, {
       style: { color: "#2c3e50", weight: 1, fillOpacity: 0.05 }
     }).addTo(map);
-  });
+  })
+  .catch(err => console.error("Gagal memuat ADMINISTRASI:", err));
 
 // ================== PERMUKIMAN ==================
 fetch(baseURL + "PEMUKIMAN.geojson")
@@ -26,7 +27,8 @@ fetch(baseURL + "PEMUKIMAN.geojson")
     L.geoJSON(data, {
       style: { color: "#f39c12", fillColor: "#f1c40f", fillOpacity: 0.4 }
     }).addTo(map);
-  });
+  })
+  .catch(err => console.error("Gagal memuat PERMUKIMAN:", err));
 
 // ================== GARDU LISTRIK ==================
 fetch(baseURL + "GARDULISTRIKPT.geojson")
@@ -45,7 +47,8 @@ fetch(baseURL + "GARDULISTRIKPT.geojson")
         <b>Kecamatan:</b> ${feature.properties.Kecamatan || '-'}
       `)
     }).addTo(map);
-  });
+  })
+  .catch(err => console.error("Gagal memuat GARDULISTRIKPT:", err));
 
 // ================== HEATMAP ==================
 fetch(baseURL + "heatmapbackground.geojson")
@@ -57,4 +60,5 @@ fetch(baseURL + "heatmapbackground.geojson")
       1
     ]);
     L.heatLayer(heatPoints, { radius: 25, blur: 15, maxZoom: 17 }).addTo(map);
-  });
+  })
+  .catch(err => console.error("Gagal memuat HEATMAP:", err));
