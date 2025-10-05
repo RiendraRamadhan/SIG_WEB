@@ -1,48 +1,37 @@
-/* Reset & Layout */
-html, body {
-  height: 100%;
+/* Reset margin dan padding */
+body, html {
   margin: 0;
-  font-family: 'Segoe UI', sans-serif;
-  background-color: #f7f9fc;
+  padding: 0;
+  height: 100%;
+  font-family: Arial, sans-serif;
 }
 
-/* Header */
+/* Header dan footer tetap tampil */
 header {
-  background-color: #0b213d;
-  color: #f9d71c;
+  background-color: #1f2937;
+  color: #facc15;
   text-align: center;
-  padding: 15px;
-  font-weight: bold;
-  letter-spacing: 1px;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  padding: 10px;
+  font-size: 18px;
 }
 
-/* Map */
-#map {
-  width: 100%;
-  height: calc(100vh - 120px); /* sisakan ruang untuk header + footer */
-  border-top: 2px solid #ccc;
-  border-bottom: 2px solid #ccc;
-}
-
-/* Footer */
 footer {
-  background-color: #0b213d;
-  color: white;
+  background-color: #1f2937;
+  color: #e5e7eb;
   text-align: center;
-  padding: 10px 0;
-  font-size: 14px;
-  position: relative;
+  padding: 6px;
+  font-size: 13px;
+  position: fixed;
   bottom: 0;
   width: 100%;
 }
 
-/* Hover efek */
-footer a {
-  color: #f9d71c;
-  text-decoration: none;
+/* Peta mengisi seluruh ruang di antara header dan footer */
+main {
+  height: calc(100vh - 110px); /* header + footer height */
 }
 
-footer a:hover {
-  text-decoration: underline;
+#map {
+  height: 100%;
+  width: 100%;
 }
