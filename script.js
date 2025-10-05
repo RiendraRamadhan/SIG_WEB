@@ -7,36 +7,31 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: '&copy; OpenStreetMap contributors'
 }).addTo(map);
 
-// Base URL GitHub Raw (langsung dari repo root)
+// Base URL GitHub Raw
 const baseURL = "https://raw.githubusercontent.com/RiendraRamadhan/SIG_WEB.github.io/main/";
 
-// ================== ADMINISTRASI ==================
+// ===== ADMINISTRASI =====
 fetch(baseURL + "ADMINISTRASIKECAMATAN.geojson")
   .then(res => res.json())
   .then(data => {
-    console.log("ADMINISTRASI ✅");
     L.geoJSON(data, {
       style: { color: "#2c3e50", weight: 1, fillOpacity: 0.05 }
     }).addTo(map);
-  })
-  .catch(err => console.error("Gagal memuat ADMINISTRASI:", err));
+  });
 
-// ================== PERMUKIMAN ==================
+// ===== PERMUKIMAN =====
 fetch(baseURL + "PEMUKIMAN.geojson")
   .then(res => res.json())
   .then(data => {
-    console.log("PERMUKIMAN ✅");
     L.geoJSON(data, {
       style: { color: "#f39c12", fillColor: "#f1c40f", fillOpacity: 0.4 }
     }).addTo(map);
-  })
-  .catch(err => console.error("Gagal memuat PERMUKIMAN:", err));
+  });
 
-// ================== GARDU LISTRIK ==================
+// ===== GARDU LISTRIK =====
 fetch(baseURL + "GARDULISTRIKPT.geojson")
   .then(res => res.json())
   .then(data => {
-    console.log("GARDULISTRIK ✅");
     L.geoJSON(data, {
       pointToLayer: (feature, latlng) =>
         L.circleMarker(latlng, {
@@ -51,19 +46,16 @@ fetch(baseURL + "GARDULISTRIKPT.geojson")
           <b>Kecamatan:</b> ${feature.properties.Kecamatan || '-'}
         `)
     }).addTo(map);
-  })
-  .catch(err => console.error("Gagal memuat GARDULISTRIKPT:", err));
+  });
 
-// ================== HEATMAP ==================
+// ===== HEATMAP =====
 fetch(baseURL + "heatmapbackground.geojson")
   .then(res => res.json())
   .then(data => {
-    console.log("HEATMAP ✅");
     const heatPoints = data.features.map(f => [
       f.geometry.coordinates[1],
       f.geometry.coordinates[0],
       1
     ]);
     L.heatLayer(heatPoints, { radius: 25, blur: 15, maxZoom: 17 }).addTo(map);
-  })
-  .catch(err => console.error("Gagal memuat HEATMAP:", err));
+  });
