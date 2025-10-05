@@ -1,30 +1,48 @@
-body {
+/* Reset & Layout */
+html, body {
+  height: 100%;
   margin: 0;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background-color: #f9fafb;
-  color: #222;
+  font-family: 'Segoe UI', sans-serif;
+  background-color: #f7f9fc;
 }
 
+/* Header */
 header {
-  background-color: #1e293b;
-  color: #facc15;
+  background-color: #0b213d;
+  color: #f9d71c;
   text-align: center;
-  padding: 12px;
-  font-size: 18px;
-  letter-spacing: 0.5px;
+  padding: 15px;
+  font-weight: bold;
+  letter-spacing: 1px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
 }
 
+/* Map */
 #map {
-  height: calc(100vh - 90px);
   width: 100%;
-  border-top: 2px solid #1e293b;
-  border-bottom: 2px solid #1e293b;
+  height: calc(100vh - 120px); /* sisakan ruang untuk header + footer */
+  border-top: 2px solid #ccc;
+  border-bottom: 2px solid #ccc;
 }
 
+/* Footer */
 footer {
+  background-color: #0b213d;
+  color: white;
   text-align: center;
-  background-color: #1e293b;
-  color: #f1f5f9;
-  padding: 10px;
-  font-size: 13px;
+  padding: 10px 0;
+  font-size: 14px;
+  position: relative;
+  bottom: 0;
+  width: 100%;
+}
+
+/* Hover efek */
+footer a {
+  color: #f9d71c;
+  text-decoration: none;
+}
+
+footer a:hover {
+  text-decoration: underline;
 }
