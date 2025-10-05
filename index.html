@@ -31,7 +31,7 @@
       attribution: '© OpenStreetMap contributors'
     }).addTo(map);
 
-    // === Icon Marker (panah biru) ===
+    // === Icon marker (panah biru) ===
     const garduIcon = new L.Icon({
       iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
       shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
@@ -47,13 +47,16 @@
       .then(data => {
         console.log("✅ Data gardu terbaca:", data);
 
+        // === Tambahkan layer GeoJSON ke peta ===
         L.geoJSON(data, {
           pointToLayer: (feature, latlng) => {
-            return L.marker(latlng, { icon: garduIcon })
+            // ambil koordinat 2D (abaikan ketinggian)
+            const [lon, lat] = feature.geometry.coordinates;
+            return L.marker([lat, lon], { icon: garduIcon })
               .bindPopup(`
-                <b>Nama Gardu:</b> ${feature.properties.NAMOBJ || '-'}<br>
-                <b>Kode:</b> ${feature.properties.LCODE || '-'}<br>
-                <b>Keterangan:</b> ${feature.properties.REMARK || '-'}
+                <b>Nama Gardu:</b> ${feature.properties.NAMOBJ}<br>
+                <b>Kode:</b> ${feature.properties.LCODE}<br>
+                <b>Keterangan:</b> ${feature.properties.REMARK}
               `);
           }
         }).addTo(map);
