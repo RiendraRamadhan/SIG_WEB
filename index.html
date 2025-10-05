@@ -1,44 +1,53 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="utf-8">
-  <title>⚡ WebGIS Gardu Listrik Kota Samarinda</title>
+  <meta charset="utf-8" />
+  <title>WebGIS Gardu Listrik Kota Samarinda</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
+  
   <!-- Leaflet Core CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   
   <!-- Plugin CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css">
-  <link rel="stylesheet" href="https://unpkg.com/leaflet.locatecontrol/dist/L.Control.Locate.min.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.locatecontrol@0.72.0/dist/L.Control.Locate.min.css">
   <link rel="stylesheet" href="https://unpkg.com/leaflet-measure@3.3.0/dist/leaflet-measure.css">
   <link rel="stylesheet" href="https://unpkg.com/leaflet-search@3.0.9/dist/leaflet-search.min.css">
-  <link rel="stylesheet" href="style.css">
+
+  <style>
+    html, body { height: 100%; margin: 0; }
+    header, footer {
+      background: #1e293b;
+      color: #fff;
+      text-align: center;
+      padding: 10px;
+      font-family: 'Segoe UI', sans-serif;
+    }
+    #map { height: calc(100% - 100px); }
+  </style>
 </head>
 
 <body>
-  <header>⚡ <strong>WebGIS Gardu Listrik Kota Samarinda</strong></header>
-  <main><div id="map"></div></main>
+  <header>⚡ WebGIS Gardu Listrik Kota Samarinda</header>
+  <div id="map"></div>
   <footer>© 2025 Riendra Ramadhan | Data: PLN & BPS Samarinda</footer>
 
   <!-- Leaflet Core JS -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-  <!-- Plugin JS -->
+  <!-- Plugins -->
   <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
-  <script src="https://unpkg.com/leaflet.locatecontrol/dist/L.Control.Locate.min.js"></script>
+  <script src="https://unpkg.com/leaflet.locatecontrol@0.72.0/dist/L.Control.Locate.min.js"></script>
   <script src="https://unpkg.com/leaflet-measure@3.3.0/dist/leaflet-measure.js"></script>
   <script src="https://unpkg.com/leaflet-search@3.0.9/dist/leaflet-search.min.js"></script>
 
   <script>
-    // === Inisialisasi Peta ===
-    const map = L.map('map', {
-      zoomControl: true
-    }).setView([-0.5, 117.15], 12);
+    // === Inisialisasi Map ===
+    const map = L.map('map').setView([-0.5, 117.15], 12);
 
-    // === Basemap ===
+    // === Base Layer ===
     const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap contributors'
+      attribution: '© OpenStreetMap'
     }).addTo(map);
 
     const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
@@ -47,79 +56,60 @@
 
     // === Ikon Marker ===
     const garduIcon = new L.Icon({
-      iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-      shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-      iconSize: [25, 41],
-      iconAnchor: [12, 41],
-      popupAnchor: [1, -34],
-      shadowSize: [41, 41]
+      iconUrl: 'https://cdn-icons-png.flaticon.com/512/684/684908.png',
+      iconSize: [35, 35],
+      iconAnchor: [17, 34],
+      popupAnchor: [0, -25]
     });
 
-    // === Ambil Data GeoJSON ===
+    // === Load GeoJSON Gardu ===
     fetch('https://raw.githubusercontent.com/RiendraRamadhan/SIG_WEB.github.io/main/GARDULISTRIKPT.geojson')
-      .then(res => res.json())
+      .then(r => r.json())
       .then(data => {
         const garduLayer = L.geoJSON(data, {
           pointToLayer: (feature, latlng) => L.marker(latlng, { icon: garduIcon }),
           onEachFeature: (feature, layer) => {
             layer.bindPopup(`
-              <b>Nama Gardu:</b> ${feature.properties.NAMOBJ}<br>
-              <b>Kode:</b> ${feature.properties.LCODE}<br>
-              <b>Keterangan:</b> ${feature.properties.REMARK}
+              <b>${feature.properties.NAMOBJ}</b><br>
+              ${feature.properties.REMARK}<br>
+              <small>Kode: ${feature.properties.LCODE}</small>
             `);
-
-            // Highlight saat hover
-            layer.on('mouseover', function () {
-              this.setIcon(new L.Icon({
-                iconUrl: 'https://cdn-icons-png.flaticon.com/512/252/252025.png',
-                iconSize: [30, 30],
-                iconAnchor: [15, 30]
-              }));
-              this.openPopup();
-            });
-            layer.on('mouseout', function () {
-              this.setIcon(garduIcon);
-              this.closePopup();
-            });
+            layer.on('mouseover', () => layer.openPopup());
+            layer.on('mouseout', () => layer.closePopup());
           }
         }).addTo(map);
 
-        // === Layer Search ===
+        // === Search Nama Gardu ===
         const searchControl = new L.Control.Search({
           layer: garduLayer,
           propertyName: 'NAMOBJ',
           zoom: 15,
-          textPlaceholder: 'Cari nama gardu...',
+          textPlaceholder: 'Cari Gardu...',
+          initial: false,
           marker: false
         });
         map.addControl(searchControl);
 
         // === Layer Control ===
-        const baseMaps = {
-          "OpenStreetMap": osm,
-          "Citra Satelit": satellite
-        };
-        const overlayMaps = {
-          "Gardu Listrik": garduLayer
-        };
-        L.control.layers(baseMaps, overlayMaps, { collapsed: false }).addTo(map);
-      })
-      .catch(err => console.error("❌ ERROR:", err));
+        const baseLayers = { "OpenStreetMap": osm, "Citra Satelit": satellite };
+        const overlays = { "Gardu Listrik": garduLayer };
+        L.control.layers(baseLayers, overlays, { collapsed: false }).addTo(map);
+      });
 
-    // === Address Search ===
-    L.Control.geocoder({
-      position: 'topleft',
-      placeholder: 'Cari alamat...'
-    }).addTo(map);
+    // === Geocoder (Cari Alamat) ===
+    L.Control.geocoder({ placeholder: "Cari alamat..." }).addTo(map);
 
-    // === Geolocation ===
+    // === Geolocation (Lokasi Saya) FIXED ===
     L.control.locate({
       position: 'topleft',
       strings: { title: "Temukan Lokasi Saya" },
-      flyTo: true
+      flyTo: true,
+      showCompass: true,
+      drawCircle: true,
+      markerStyle: { color: "#1e90ff", fillColor: "#1e90ff" }
     }).addTo(map);
 
-    // === Measure Tool (baru, stabil, tidak bug) ===
+    // === Measure Tool ===
     L.control.measure({
       primaryLengthUnit: 'meters',
       secondaryLengthUnit: 'kilometers',
