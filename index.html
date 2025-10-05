@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
   <meta charset="utf-8">
-  <title>🌐 WebGIS Gardu Listrik Kota Samarinda</title>
+  <title>⚡ WebGIS Gardu Listrik Kota Samarinda</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <link rel="stylesheet" href="style.css">
 </head>
@@ -22,30 +22,32 @@
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
-    // Inisialisasi peta
+    // === Inisialisasi peta ===
     const map = L.map('map').setView([-0.5, 117.15], 12);
 
-    // Base map dari OpenStreetMap
+    // === Basemap ===
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
       attribution: '© OpenStreetMap contributors'
     }).addTo(map);
 
-    // === ICON untuk Gardu Listrik ===
-    const garduIcon = L.icon({
-      iconUrl: 'https://cdn-icons-png.flaticon.com/512/252/252025.png',
-      iconSize: [35, 35],      // Ukuran marker
-      iconAnchor: [17, 34],    // Titik tengah marker
-      popupAnchor: [0, -30]    // Posisi popup
+    // === Gunakan default blue marker dari Leaflet ===
+    const garduIcon = new L.Icon({
+      iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+      shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+      iconSize: [25, 41],
+      iconAnchor: [12, 41],
+      popupAnchor: [1, -34],
+      shadowSize: [41, 41]
     });
 
-    // === Ambil file GeoJSON dari GitHub ===
+    // === Ambil data GeoJSON dari GitHub ===
     fetch('https://raw.githubusercontent.com/RiendraRamadhan/SIG_WEB.github.io/main/GARDULISTRIKPT.geojson')
       .then(res => res.json())
       .then(data => {
         console.log("✅ Data gardu terbaca:", data);
         L.geoJSON(data, {
-          pointToLayer: (feature, latlng) => 
+          pointToLayer: (feature, latlng) =>
             L.marker(latlng, { icon: garduIcon })
               .bindPopup(`
                 <b>Nama Gardu:</b> ${feature.properties.Nama_Gardu || '-'}<br>
