@@ -1,53 +1,54 @@
-// Inisialisasi peta
-var map = L.map('map').setView([-0.5, 117.15], 12);
+// Inisialisasi Peta
+var map = L.map('map').setView([-0.502, 117.153], 12);
 
 // Basemap
-var osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+var basemap = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   maxZoom: 19,
   attribution: '&copy; OpenStreetMap contributors'
 }).addTo(map);
 
-// Tambahkan layer administrasi
-fetch('qgis2web_2025_10_05_21_59_36_608814/ADMINISTRASIKECAMATAN.geojson')
+// Base URL GitHub raw
+const baseURL = "https://raw.githubusercontent.com/RiendraRamadhan/SIG_WEB/main/data/";
+
+// ================== ADMINISTRASI ==================
+fetch(baseURL + "ADMINISTRASIKECAMATAN.geojson")
   .then(res => res.json())
   .then(data => {
     L.geoJSON(data, {
-      style: { color: "#333", weight: 1, fillOpacity: 0.2 }
+      style: { color: "#2c3e50", weight: 1, fillOpacity: 0.05 }
     }).addTo(map);
   });
 
-// Tambahkan layer permukiman
-fetch('qgis2web_2025_10_05_21_59_36_608814/PEMUKIMAN.geojson')
+// ================== PERMUKIMAN ==================
+fetch(baseURL + "PEMUKIMAN.geojson")
   .then(res => res.json())
   .then(data => {
     L.geoJSON(data, {
-      style: { color: "#f39c12", fillColor: "#f1c40f", fillOpacity: 0.5 }
+      style: { color: "#f39c12", fillColor: "#f1c40f", fillOpacity: 0.4 }
     }).addTo(map);
   });
 
-// Tambahkan layer gardu listrik
-fetch('qgis2web_2025_10_05_21_59_36_608814/GARDULISTRIKPT.geojson')
+// ================== GARDU LISTRIK ==================
+fetch(baseURL + "GARDULISTRIKPT.geojson")
   .then(res => res.json())
   .then(data => {
     L.geoJSON(data, {
-      pointToLayer: (feature, latlng) => {
-        return L.circleMarker(latlng, {
-          radius: 6,
-          fillColor: "red",
-          color: "#fff",
-          weight: 1,
-          fillOpacity: 0.9
-        }).bindPopup(`
-          <b>Nama Gardu:</b> ${feature.properties.Nama_Gardu || '-'}<br>
-          <b>Kapasitas:</b> ${feature.properties.Kapasitas || '-'}<br>
-          <b>Kecamatan:</b> ${feature.properties.Kecamatan || '-'}
-        `);
-      }
+      pointToLayer: (feature, latlng) => L.circleMarker(latlng, {
+        radius: 6,
+        fillColor: "red",
+        color: "#fff",
+        weight: 1,
+        fillOpacity: 0.9
+      }).bindPopup(`
+        <b>Nama Gardu:</b> ${feature.properties.Nama_Gardu || '-'}<br>
+        <b>Kapasitas:</b> ${feature.properties.Kapasitas || '-'}<br>
+        <b>Kecamatan:</b> ${feature.properties.Kecamatan || '-'}
+      `)
     }).addTo(map);
   });
 
-// Tambahkan heatmap
-fetch('qgis2web_2025_10_05_21_59_36_608814/heatmapbackground.geojson')
+// ================== HEATMAP ==================
+fetch(baseURL + "heatmapbackground.geojson")
   .then(res => res.json())
   .then(data => {
     const heatPoints = data.features.map(f => [
