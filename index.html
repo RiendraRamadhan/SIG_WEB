@@ -99,11 +99,21 @@
           f.geometry.coordinates[0],
           0.8   // intensitas bisa kamu ubah atau kalkulasi berdasarkan atribut
         ]);
-        const heatLayer = L.heatLayer(heatPoints, {
-          radius: 30,
-          blur: 20,
-          maxZoom: 15
-        });
+          let baseRadius = 100; // setara 1 km di zoom 12
+          const heatLayer = L.heatLayer(heatPoints, {
+            radius: baseRadius,
+            blur: 25,
+            maxZoom: 15,
+            gradient: { 0.4: "blue", 0.65: "lime", 1: "red" }
+          }).addTo(map);
+          
+          // Skala radius saat zoom berubah
+          map.on('zoomend', () => {
+            const zoom = map.getZoom();
+            const scale = Math.pow(2, zoom - 12); // zoom 12 jadi baseline
+            heatLayer.setOptions({ radius: baseRadius / scale });
+          });
+
         overlays["Heatmap Gardu"] = heatLayer;
 
         // Tambahkan kontrol layer (ON / OFF)
