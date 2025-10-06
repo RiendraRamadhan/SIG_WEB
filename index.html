@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet.locatecontrol@0.72.0/dist/L.Control.Locate.min.css">
   <link rel="stylesheet" href="https://unpkg.com/leaflet-measure@3.3.0/dist/leaflet-measure.css">
   <link rel="stylesheet" href="https://unpkg.com/leaflet-search@3.0.9/dist/leaflet-search.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
     html, body {
@@ -37,12 +38,13 @@
     }
 
     #sidebar {
-      width: 300px;
+      width: 320px;
       background: #ffffff;
       box-shadow: 2px 0 10px rgba(0,0,0,0.15);
       padding: 20px;
       overflow-y: auto;
       z-index: 800;
+      transition: all 0.3s ease-in-out;
     }
 
     #sidebar h3 {
@@ -70,12 +72,18 @@
       flex-shrink: 0;
     }
 
-    .leaflet-popup-content {
-      font-size: 13px;
+    #chartContainer {
+      margin-top: 20px;
+      text-align: center;
     }
 
-    .leaflet-container {
-      background: #e5e7eb;
+    #chartContainer canvas {
+      max-width: 100%;
+      height: 220px !important;
+    }
+
+    .leaflet-popup-content {
+      font-size: 13px;
     }
   </style>
 </head>
@@ -89,9 +97,14 @@
       <div class="info-box"><b>Total Gardu:</b> <span id="totalGardu">0</span></div>
       <div class="info-box"><b>Kapasitas Total:</b> <span id="totalKapasitas">0 MW</span></div>
       <div class="info-box"><b>Layer Aktif:</b> <span id="activeLayer">Peta Jalan</span></div>
-      <hr>
-      <p>🗺️ Klik marker pada peta untuk melihat detail tiap gardu listrik.</p>
-      <p>🔥 Aktifkan heatmap di kontrol layer untuk melihat sebaran intensitas gardu.</p>
+
+      <div id="selectedInfo" style="margin-top:15px;">
+        <h4>🔎 Detail Gardu Terpilih:</h4>
+        <p id="garduName">Klik marker pada peta...</p>
+        <div id="chartContainer">
+          <canvas id="garduChart"></canvas>
+        </div>
+      </div>
     </div>
 
     <div id="map"></div>
@@ -136,6 +149,35 @@
       shadowSize: [41, 41]
     });
 
+    // Chart.js setup
+    let garduChart;
+    function updateChart(name, capacity) {
+      document.getElementById("garduName").textContent = name;
+      const ctx = document.getElementById("garduChart").getContext("2d");
+
+      if (garduChart) garduChart.destroy();
+      garduChart = new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels: [name],
+          datasets: [{
+            label: "Kapasitas (MW)",
+            data: [capacity],
+            backgroundColor: "#3b82f6"
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            y: {
+              beginAtZero: true,
+              max: 100
+            }
+          }
+        }
+      });
+    }
+
     // Load GeoJSON
     fetch('https://raw.githubusercontent.com/RiendraRamadhan/SIG_WEB.github.io/main/GARDULISTRIKPT.geojson')
       .then(res => res.json())
@@ -148,11 +190,16 @@
         const garduLayer = L.geoJSON(data, {
           pointToLayer: (feature, latlng) => L.marker(latlng, { icon: garduIcon }),
           onEachFeature: (feature, layer) => {
+            const kapasitas = Math.floor(Math.random() * 100) + 20; // kapasitas simbolis
             layer.bindPopup(`
               <b>Nama Gardu:</b> ${feature.properties.NAMOBJ}<br>
               <b>Kode:</b> ${feature.properties.LCODE}<br>
+              <b>Kapasitas:</b> ${kapasitas} MW<br>
               <b>Keterangan:</b> ${feature.properties.REMARK}
             `);
+            layer.on("click", () => {
+              updateChart(feature.properties.NAMOBJ, kapasitas);
+            });
           }
         }).addTo(map);
         overlays["Gardu Listrik"] = garduLayer;
@@ -163,7 +210,6 @@
           f.geometry.coordinates[0],
           0.9
         ]);
-
         const heatLayer = L.heatLayer(heatPoints, {
           radius: 55,
           blur: 35,
@@ -181,7 +227,10 @@
         overlays["Heatmap Sebaran Gardu"] = heatLayer;
 
         // Controls
-        const layerControl = L.control.layers(baseLayers, overlays, { collapsed: false }).addTo(map);
+        L.control.layers(baseLayers, overlays, { collapsed: false }).addTo(map);
+        L.Control.geocoder({ position: 'topleft', placeholder: 'Cari alamat...' }).addTo(map);
+        L.control.locate({ position: 'topleft', strings: { title: "Temukan Lokasi Saya" }, flyTo: true, drawCircle: false }).addTo(map);
+        L.control.measure({ primaryLengthUnit: 'meters', secondaryLengthUnit: 'kilometers' }).addTo(map);
 
         const searchControl = new L.Control.Search({
           layer: garduLayer,
@@ -191,23 +240,6 @@
           marker: false
         });
         map.addControl(searchControl);
-
-        L.Control.geocoder({ position: 'topleft', placeholder: 'Cari alamat...' }).addTo(map);
-
-        L.control.locate({
-          position: 'topleft',
-          strings: { title: "Temukan Lokasi Saya" },
-          flyTo: true,
-          drawCircle: false
-        }).addTo(map);
-
-        L.control.measure({
-          primaryLengthUnit: 'meters',
-          secondaryLengthUnit: 'kilometers',
-          primaryAreaUnit: 'sqmeters',
-          activeColor: '#FF8C00',
-          completedColor: '#FF0000'
-        }).addTo(map);
 
         map.on('baselayerchange', e => {
           document.getElementById('activeLayer').textContent = e.name;
