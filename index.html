@@ -16,19 +16,52 @@
     html, body {
       height: 100%;
       margin: 0;
-      font-family: Arial, sans-serif;
-      background: #e2e8f0; /* abu terang supaya kontras bagus */
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f1f5f9;
     }
+
     header, footer {
       background: #1e293b;
       color: #fff;
       text-align: center;
       padding: 10px;
     }
+
     #map {
       height: calc(100% - 120px);
-      width: 100%;
+      width: calc(100% - 300px);
+      float: right;
     }
+
+    #sidebar {
+      width: 300px;
+      height: calc(100% - 120px);
+      background: #ffffff;
+      box-shadow: 2px 0 10px rgba(0,0,0,0.15);
+      padding: 20px;
+      overflow-y: auto;
+      float: left;
+    }
+
+    #sidebar h3 {
+      color: #1e293b;
+      border-bottom: 2px solid #3b82f6;
+      padding-bottom: 5px;
+      margin-bottom: 15px;
+    }
+
+    .info-box {
+      background: #e2e8f0;
+      border-left: 5px solid #3b82f6;
+      padding: 10px;
+      margin-bottom: 10px;
+      border-radius: 6px;
+    }
+
+    footer {
+      clear: both;
+    }
+
     .leaflet-control {
       font-size: 13px;
     }
@@ -37,7 +70,19 @@
 
 <body>
   <header>⚡ WebGIS Gardu Listrik Kota Samarinda</header>
+
+  <div id="sidebar">
+    <h3>📊 Informasi Gardu</h3>
+    <div class="info-box"><b>Total Gardu:</b> <span id="totalGardu">0</span></div>
+    <div class="info-box"><b>Kapasitas Total:</b> <span id="totalKapasitas">0 MW</span></div>
+    <div class="info-box"><b>Layer Aktif:</b> <span id="activeLayer">Peta Jalan</span></div>
+    <hr>
+    <p>Gunakan panel di kanan untuk melihat peta, klik marker untuk informasi tiap gardu.</p>
+    <p>Aktifkan heatmap di kontrol layer untuk melihat sebaran intensitas gardu.</p>
+  </div>
+
   <div id="map"></div>
+
   <footer>© 2025 Riendra Ramadhan | Data: PLN & BPS Samarinda</footer>
 
   <!-- JS Leaflet & plugin -->
@@ -49,7 +94,6 @@
   <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
 
   <script>
-    // Inisialisasi map
     const map = L.map('map').setView([-0.5, 117.15], 12);
 
     // === Basemap ===
@@ -62,7 +106,13 @@
       { attribution: 'Tiles © Esri' }
     );
 
-    // Ikon marker gardu
+    const baseLayers = {
+      "Peta Jalan": streetMap,
+      "Citra Satelit": satelliteMap
+    };
+    const overlays = {};
+
+    // === Ikon marker ===
     const garduIcon = new L.Icon({
       iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
       shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
@@ -72,18 +122,15 @@
       shadowSize: [41, 41]
     });
 
-    // BaseLayer dan Overlay
-    const baseLayers = {
-      "Peta Jalan": streetMap,
-      "Citra Satelit": satelliteMap
-    };
-    const overlays = {};
-
-    // === Muat data GeoJSON Gardu ===
+    // === Ambil data Gardu ===
     fetch('https://raw.githubusercontent.com/RiendraRamadhan/SIG_WEB.github.io/main/GARDULISTRIKPT.geojson')
       .then(res => res.json())
       .then(data => {
-        // Marker layer
+        const total = data.features.length;
+        document.getElementById('totalGardu').textContent = total;
+        document.getElementById('totalKapasitas').textContent = `${(total * 25).toFixed(1)} MW`;
+
+        // Marker Gardu
         const garduLayer = L.geoJSON(data, {
           pointToLayer: (feature, latlng) => L.marker(latlng, { icon: garduIcon }),
           onEachFeature: (feature, layer) => {
@@ -96,19 +143,18 @@
         }).addTo(map);
         overlays["Gardu Listrik"] = garduLayer;
 
-        // === HEATMAP ===
+        // === Heatmap ===
         const heatPoints = data.features.map(f => [
           f.geometry.coordinates[1],
           f.geometry.coordinates[0],
-          1.0 // intensitas
+          0.9
         ]);
-
         const heatLayer = L.heatLayer(heatPoints, {
-          radius: 60,
-          blur: 40,
+          radius: 55,
+          blur: 35,
           maxZoom: 18,
-          minOpacity: 0.3,
-          maxOpacity: 0.6,
+          minOpacity: 0.35,
+          maxOpacity: 0.7,
           gradient: {
             0.2: "blue",
             0.4: "lime",
@@ -119,11 +165,10 @@
         });
         overlays["Heatmap Sebaran Gardu"] = heatLayer;
 
-        // Kontrol Layer
-        L.control.layers(baseLayers, overlays, { collapsed: false }).addTo(map);
+        // === Layer Control ===
+        const layerControl = L.control.layers(baseLayers, overlays, { collapsed: false }).addTo(map);
 
-        // === FITUR TAMBAHAN ===
-        // 🔍 Search Gardu
+        // === Search Control ===
         const searchControl = new L.Control.Search({
           layer: garduLayer,
           propertyName: 'NAMOBJ',
@@ -133,22 +178,16 @@
         });
         map.addControl(searchControl);
 
-        // 📍 Geocoder (Cari alamat)
-        L.Control.geocoder({
-          position: 'topleft',
-          placeholder: 'Cari alamat...'
-        }).addTo(map);
+        // === Fitur tambahan ===
+        L.Control.geocoder({ position: 'topleft', placeholder: 'Cari alamat...' }).addTo(map);
 
-        // 📡 Lokasi pengguna
         L.control.locate({
           position: 'topleft',
           strings: { title: "Temukan Lokasi Saya" },
           flyTo: true,
-          drawCircle: false, // penting: biar tidak error radius bug
-          showPopup: true
+          drawCircle: false
         }).addTo(map);
 
-        // 📏 Alat Ukur
         L.control.measure({
           primaryLengthUnit: 'meters',
           secondaryLengthUnit: 'kilometers',
@@ -157,8 +196,11 @@
           completedColor: '#FF0000'
         }).addTo(map);
 
-      })
-      .catch(err => console.error("❌ Gagal load GeoJSON:", err));
+        // Update sidebar saat basemap diganti
+        map.on('baselayerchange', e => {
+          document.getElementById('activeLayer').textContent = e.name;
+        });
+      });
   </script>
 </body>
 </html>
