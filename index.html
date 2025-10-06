@@ -12,15 +12,12 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet-measure@3.3.0/dist/leaflet-measure.css">
   <link rel="stylesheet" href="https://unpkg.com/leaflet-search@3.0.9/dist/leaflet-search.min.css">
 
-  <!-- Chart.js -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
   <style>
     html, body {
       height: 100%;
       margin: 0;
-      font-family: 'Segoe UI', Arial, sans-serif;
-      background: #0f172a;
+      font-family: Arial, sans-serif;
+      background: #e2e8f0; /* abu terang supaya kontras bagus */
     }
     header, footer {
       background: #1e293b;
@@ -29,53 +26,11 @@
       padding: 10px;
     }
     #map {
-      position: absolute;
-      top: 60px;
-      bottom: 40px;
-      left: 0;
-      right: 0;
-      z-index: 1;
-    }
-    #sidebar {
-      position: absolute;
-      top: 60px;
-      right: 0;
-      width: 340px;
-      height: calc(100% - 100px);
-      background: #1e293b;
-      color: white;
-      padding: 15px;
-      overflow-y: auto;
-      z-index: 1000;
-      box-shadow: -3px 0 10px rgba(0,0,0,0.4);
-      transform: translateX(100%);
-      transition: transform 0.4s ease-in-out;
-    }
-    #sidebar.active {
-      transform: translateX(0);
-    }
-    #sidebar h2 {
-      margin-top: 0;
-      color: #38bdf8;
-    }
-    .close-btn {
-      background: #f43f5e;
-      color: white;
-      border: none;
-      padding: 5px 10px;
-      float: right;
-      cursor: pointer;
-      border-radius: 4px;
-    }
-    canvas {
-      background: #0f172a;
-      border-radius: 10px;
-      padding: 5px;
-    }
-    footer {
-      position: absolute;
-      bottom: 0;
+      height: calc(100% - 120px);
       width: 100%;
+    }
+    .leaflet-control {
+      font-size: 13px;
     }
   </style>
 </head>
@@ -83,20 +38,9 @@
 <body>
   <header>⚡ WebGIS Gardu Listrik Kota Samarinda</header>
   <div id="map"></div>
-
-  <!-- SIDEBAR INFO -->
-  <div id="sidebar">
-    <button class="close-btn" onclick="toggleSidebar(false)">Tutup ✖</button>
-    <h2>Detail Gardu</h2>
-    <div id="gardu-info">
-      <p>Klik marker gardu di peta untuk melihat detail dan kapasitasnya.</p>
-    </div>
-    <canvas id="kapasitasChart" width="300" height="180"></canvas>
-  </div>
-
   <footer>© 2025 Riendra Ramadhan | Data: PLN & BPS Samarinda</footer>
 
-  <!-- JS Leaflet & Plugin -->
+  <!-- JS Leaflet & plugin -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
   <script src="https://unpkg.com/leaflet.locatecontrol@0.72.0/dist/L.Control.Locate.min.js"></script>
@@ -105,110 +49,66 @@
   <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
 
   <script>
-    // === Inisialisasi Peta ===
+    // Inisialisasi map
     const map = L.map('map').setView([-0.5, 117.15], 12);
 
-    const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    // === Basemap ===
+    const streetMap = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap contributors'
     }).addTo(map);
 
-    const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-      attribution: 'Tiles © Esri'
+    const satelliteMap = L.tileLayer(
+      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+      { attribution: 'Tiles © Esri' }
+    );
+
+    // Ikon marker gardu
+    const garduIcon = new L.Icon({
+      iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+      shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+      iconSize: [25, 41],
+      iconAnchor: [12, 41],
+      popupAnchor: [1, -34],
+      shadowSize: [41, 41]
     });
 
-    const baseLayers = { "OpenStreetMap": osm, "Citra Satelit": satellite };
+    // BaseLayer dan Overlay
+    const baseLayers = {
+      "Peta Jalan": streetMap,
+      "Citra Satelit": satelliteMap
+    };
     const overlays = {};
 
-    // === Ikon Marker ===
-    const garduIcon = new L.Icon({
-      iconUrl: 'https://cdn-icons-png.flaticon.com/512/3101/3101655.png',
-      iconSize: [35, 35],
-      iconAnchor: [17, 34],
-      popupAnchor: [0, -25]
-    });
-
-    // === Sidebar ===
-    function toggleSidebar(show) {
-      const sidebar = document.getElementById("sidebar");
-      if (show) sidebar.classList.add("active");
-      else sidebar.classList.remove("active");
-    }
-
-    let chartInstance;
-
-    function updateChart(daya) {
-      const ctx = document.getElementById('kapasitasChart').getContext('2d');
-      if (chartInstance) chartInstance.destroy();
-
-      chartInstance = new Chart(ctx, {
-        type: 'bar',
-        data: {
-          labels: ['Kapasitas Daya (kVA)'],
-          datasets: [{
-            label: 'Kapasitas',
-            data: [daya],
-            backgroundColor: '#38bdf8'
-          }]
-        },
-        options: {
-          responsive: true,
-          scales: {
-            y: {
-              beginAtZero: true,
-              ticks: { color: 'white' },
-              grid: { color: '#334155' }
-            },
-            x: {
-              ticks: { color: 'white' },
-              grid: { color: '#334155' }
-            }
-          },
-          plugins: {
-            legend: { labels: { color: 'white' } }
-          }
-        }
-      });
-    }
-
-    // === Load Data Gardu ===
+    // === Muat data GeoJSON Gardu ===
     fetch('https://raw.githubusercontent.com/RiendraRamadhan/SIG_WEB.github.io/main/GARDULISTRIKPT.geojson')
       .then(res => res.json())
       .then(data => {
+        // Marker layer
         const garduLayer = L.geoJSON(data, {
           pointToLayer: (feature, latlng) => L.marker(latlng, { icon: garduIcon }),
           onEachFeature: (feature, layer) => {
-            // Simulasi kapasitas (acak untuk demo)
-            const kapasitas = Math.floor(Math.random() * (2000 - 250 + 1)) + 250;
-
-            layer.on('click', () => {
-              document.getElementById("gardu-info").innerHTML = `
-                <h3>${feature.properties.NAMOBJ}</h3>
-                <p><b>Kode:</b> ${feature.properties.LCODE}</p>
-                <p><b>Keterangan:</b> ${feature.properties.REMARK}</p>
-                <p><b>Kapasitas Daya:</b> ${kapasitas} kVA</p>
-                <p><b>Koordinat:</b><br>${feature.geometry.coordinates[1].toFixed(5)}, ${feature.geometry.coordinates[0].toFixed(5)}</p>
-              `;
-              updateChart(kapasitas);
-              toggleSidebar(true);
-            });
+            layer.bindPopup(`
+              <b>Nama Gardu:</b> ${feature.properties.NAMOBJ}<br>
+              <b>Kode:</b> ${feature.properties.LCODE}<br>
+              <b>Keterangan:</b> ${feature.properties.REMARK}
+            `);
           }
         }).addTo(map);
-
         overlays["Gardu Listrik"] = garduLayer;
 
-        // === Heatmap ===
+        // === HEATMAP ===
         const heatPoints = data.features.map(f => [
           f.geometry.coordinates[1],
           f.geometry.coordinates[0],
-          0.6 + Math.random() * 0.4
+          1.0 // intensitas
         ]);
-        let baseRadius = 80;
+
         const heatLayer = L.heatLayer(heatPoints, {
-          radius: baseRadius,
-          blur: 20,
-          maxZoom: 20,
-          minOpacity: 0.25,
-          maxOpacity: 0.7,
+          radius: 60,
+          blur: 40,
+          maxZoom: 18,
+          minOpacity: 0.3,
+          maxOpacity: 0.6,
           gradient: {
             0.2: "blue",
             0.4: "lime",
@@ -216,21 +116,14 @@
             0.8: "orange",
             1.0: "red"
           }
-        }).addTo(map);
-
-        map.on('zoomend', () => {
-          const zoom = map.getZoom();
-          const scale = Math.pow(1.5, zoom - 12);
-          const newRadius = Math.max(baseRadius * scale, 50);
-          heatLayer.setOptions({ radius: newRadius });
         });
+        overlays["Heatmap Sebaran Gardu"] = heatLayer;
 
-        overlays["Heatmap Gardu"] = heatLayer;
-
-        // Layer Control
+        // Kontrol Layer
         L.control.layers(baseLayers, overlays, { collapsed: false }).addTo(map);
 
-        // Search
+        // === FITUR TAMBAHAN ===
+        // 🔍 Search Gardu
         const searchControl = new L.Control.Search({
           layer: garduLayer,
           propertyName: 'NAMOBJ',
@@ -239,27 +132,33 @@
           marker: false
         });
         map.addControl(searchControl);
-      });
 
-    // === Geocoder ===
-    L.Control.geocoder({ position: 'topleft', placeholder: 'Cari alamat...' }).addTo(map);
+        // 📍 Geocoder (Cari alamat)
+        L.Control.geocoder({
+          position: 'topleft',
+          placeholder: 'Cari alamat...'
+        }).addTo(map);
 
-    // === Locate ===
-    L.control.locate({
-      position: 'topleft',
-      strings: { title: "Temukan Lokasi Saya" },
-      flyTo: true,
-      showCompass: true
-    }).addTo(map);
+        // 📡 Lokasi pengguna
+        L.control.locate({
+          position: 'topleft',
+          strings: { title: "Temukan Lokasi Saya" },
+          flyTo: true,
+          drawCircle: false, // penting: biar tidak error radius bug
+          showPopup: true
+        }).addTo(map);
 
-    // === Measure Tool ===
-    L.control.measure({
-      primaryLengthUnit: 'meters',
-      secondaryLengthUnit: 'kilometers',
-      primaryAreaUnit: 'sqmeters',
-      activeColor: '#38bdf8',
-      completedColor: '#f43f5e'
-    }).addTo(map);
+        // 📏 Alat Ukur
+        L.control.measure({
+          primaryLengthUnit: 'meters',
+          secondaryLengthUnit: 'kilometers',
+          primaryAreaUnit: 'sqmeters',
+          activeColor: '#FF8C00',
+          completedColor: '#FF0000'
+        }).addTo(map);
+
+      })
+      .catch(err => console.error("❌ Gagal load GeoJSON:", err));
   </script>
 </body>
 </html>
