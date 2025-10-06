@@ -4,26 +4,29 @@
   <meta charset="utf-8" />
   <title>WebGIS Gardu Listrik Kota Samarinda</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  
-  <!-- Leaflet Core CSS -->
+
+  <!-- CSS Leaflet & Plugin -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-  
-  <!-- Plugin CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css">
   <link rel="stylesheet" href="https://unpkg.com/leaflet.locatecontrol@0.72.0/dist/L.Control.Locate.min.css">
   <link rel="stylesheet" href="https://unpkg.com/leaflet-measure@3.3.0/dist/leaflet-measure.css">
   <link rel="stylesheet" href="https://unpkg.com/leaflet-search@3.0.9/dist/leaflet-search.min.css">
 
   <style>
-    html, body { height: 100%; margin: 0; }
+    html, body {
+      height: 100%;
+      margin: 0;
+      font-family: Arial, sans-serif;
+    }
     header, footer {
       background: #1e293b;
       color: #fff;
       text-align: center;
       padding: 10px;
-      font-family: 'Segoe UI', sans-serif;
     }
-    #map { height: calc(100% - 100px); }
+    #map {
+      height: calc(100% - 120px);  /* sisakan ruang header + footer */
+    }
   </style>
 </head>
 
@@ -32,84 +35,106 @@
   <div id="map"></div>
   <footer>© 2025 Riendra Ramadhan | Data: PLN & BPS Samarinda</footer>
 
-  <!-- Leaflet Core JS -->
+  <!-- JS Leaflet & plugin -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-  <!-- Plugins -->
   <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
   <script src="https://unpkg.com/leaflet.locatecontrol@0.72.0/dist/L.Control.Locate.min.js"></script>
   <script src="https://unpkg.com/leaflet-measure@3.3.0/dist/leaflet-measure.js"></script>
   <script src="https://unpkg.com/leaflet-search@3.0.9/dist/leaflet-search.min.js"></script>
+  <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
 
   <script>
-    // === Inisialisasi Map ===
+    // Inisialisasi map
     const map = L.map('map').setView([-0.5, 117.15], 12);
 
-    // === Base Layer ===
+    // Basemap
     const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap'
+      attribution: '© OpenStreetMap contributors'
     }).addTo(map);
 
     const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
       attribution: 'Tiles © Esri'
     });
 
-    // === Ikon Marker ===
+    // Ikon marker
     const garduIcon = new L.Icon({
-      iconUrl: 'https://cdn-icons-png.flaticon.com/512/684/684908.png',
-      iconSize: [35, 35],
-      iconAnchor: [17, 34],
-      popupAnchor: [0, -25]
+      iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+      shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+      iconSize: [25, 41],
+      iconAnchor: [12, 41],
+      popupAnchor: [1, -34],
+      shadowSize: [41, 41]
     });
 
-    // === Load GeoJSON Gardu ===
+    // Simpan baseLayers & overlays untuk kontrol layer
+    const baseLayers = {
+      "OpenStreetMap": osm,
+      "Citra Satelit": satellite
+    };
+    const overlays = {};
+
+    // Muat data gardu dan buat marker & heatmap
     fetch('https://raw.githubusercontent.com/RiendraRamadhan/SIG_WEB.github.io/main/GARDULISTRIKPT.geojson')
-      .then(r => r.json())
+      .then(res => res.json())
       .then(data => {
+        // Layer marker gardu
         const garduLayer = L.geoJSON(data, {
           pointToLayer: (feature, latlng) => L.marker(latlng, { icon: garduIcon }),
           onEachFeature: (feature, layer) => {
             layer.bindPopup(`
-              <b>${feature.properties.NAMOBJ}</b><br>
-              ${feature.properties.REMARK}<br>
-              <small>Kode: ${feature.properties.LCODE}</small>
+              <b>Nama Gardu:</b> ${feature.properties.NAMOBJ}<br>
+              <b>Kode:</b> ${feature.properties.LCODE}<br>
+              <b>Keterangan:</b> ${feature.properties.REMARK}
             `);
             layer.on('mouseover', () => layer.openPopup());
             layer.on('mouseout', () => layer.closePopup());
           }
         }).addTo(map);
 
-        // === Search Nama Gardu ===
+        overlays["Gardu Listrik"] = garduLayer;
+
+        // Buat heatmap dari data titik
+        const heatPoints = data.features.map(f => [
+          f.geometry.coordinates[1],
+          f.geometry.coordinates[0],
+          0.8   // intensitas bisa kamu ubah atau kalkulasi berdasarkan atribut
+        ]);
+        const heatLayer = L.heatLayer(heatPoints, {
+          radius: 30,
+          blur: 20,
+          maxZoom: 15
+        });
+        overlays["Heatmap Gardu"] = heatLayer;
+
+        // Tambahkan kontrol layer (ON / OFF)
+        L.control.layers(baseLayers, overlays, { collapsed: false }).addTo(map);
+
+        // Tambahkan search gardu
         const searchControl = new L.Control.Search({
           layer: garduLayer,
           propertyName: 'NAMOBJ',
           zoom: 15,
-          textPlaceholder: 'Cari Gardu...',
-          initial: false,
+          textPlaceholder: 'Cari nama gardu...',
           marker: false
         });
         map.addControl(searchControl);
+      })
+      .catch(err => console.error("ERROR load gardu:", err));
 
-        // === Layer Control ===
-        const baseLayers = { "OpenStreetMap": osm, "Citra Satelit": satellite };
-        const overlays = { "Gardu Listrik": garduLayer };
-        L.control.layers(baseLayers, overlays, { collapsed: false }).addTo(map);
-      });
+    // Geocoder (cari alamat)
+    L.Control.geocoder({
+      position: 'topleft',
+      placeholder: 'Cari alamat...'
+    }).addTo(map);
 
-    // === Geocoder (Cari Alamat) ===
-    L.Control.geocoder({ placeholder: "Cari alamat..." }).addTo(map);
-
-    // === Geolocation (Lokasi Saya) FIXED ===
+    // Geolocate (lokasi pengguna)
     L.control.locate({
       position: 'topleft',
       strings: { title: "Temukan Lokasi Saya" },
-      flyTo: true,
-      showCompass: true,
-      drawCircle: true,
-      markerStyle: { color: "#1e90ff", fillColor: "#1e90ff" }
+      flyTo: true
     }).addTo(map);
 
-    // === Measure Tool ===
+    // Measure tool
     L.control.measure({
       primaryLengthUnit: 'meters',
       secondaryLengthUnit: 'kilometers',
@@ -117,6 +142,7 @@
       activeColor: '#FF8C00',
       completedColor: '#FF0000'
     }).addTo(map);
+
   </script>
 </body>
 </html>
