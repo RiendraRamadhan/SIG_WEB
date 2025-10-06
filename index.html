@@ -25,7 +25,7 @@
       padding: 10px;
     }
     #map {
-      height: calc(100% - 120px);  /* sisakan ruang header + footer */
+      height: calc(100% - 120px); /* ruang untuk header dan footer */
     }
   </style>
 </head>
@@ -35,7 +35,7 @@
   <div id="map"></div>
   <footer>© 2025 Riendra Ramadhan | Data: PLN & BPS Samarinda</footer>
 
-  <!-- JS Leaflet & plugin -->
+  <!-- JS Leaflet & Plugin -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
   <script src="https://unpkg.com/leaflet.locatecontrol@0.72.0/dist/L.Control.Locate.min.js"></script>
@@ -44,10 +44,10 @@
   <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
 
   <script>
-    // Inisialisasi map
+    // === Inisialisasi Peta ===
     const map = L.map('map').setView([-0.5, 117.15], 12);
 
-    // Basemap
+    // === Basemap ===
     const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap contributors'
     }).addTo(map);
@@ -56,7 +56,7 @@
       attribution: 'Tiles © Esri'
     });
 
-    // Ikon marker
+    // === Ikon Gardu ===
     const garduIcon = new L.Icon({
       iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
       shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
@@ -66,14 +66,11 @@
       shadowSize: [41, 41]
     });
 
-    // Simpan baseLayers & overlays untuk kontrol layer
-    const baseLayers = {
-      "OpenStreetMap": osm,
-      "Citra Satelit": satellite
-    };
+    // === Layer Control ===
+    const baseLayers = { "OpenStreetMap": osm, "Citra Satelit": satellite };
     const overlays = {};
 
-    // Muat data gardu dan buat marker & heatmap
+    // === Load Data Gardu ===
     fetch('https://raw.githubusercontent.com/RiendraRamadhan/SIG_WEB.github.io/main/GARDULISTRIKPT.geojson')
       .then(res => res.json())
       .then(data => {
@@ -90,36 +87,44 @@
             layer.on('mouseout', () => layer.closePopup());
           }
         }).addTo(map);
-
         overlays["Gardu Listrik"] = garduLayer;
 
-        // Buat heatmap dari data titik
+        // === Heatmap Dinamis ===
         const heatPoints = data.features.map(f => [
           f.geometry.coordinates[1],
           f.geometry.coordinates[0],
-          0.8   // intensitas bisa kamu ubah atau kalkulasi berdasarkan atribut
+          0.6 + Math.random() * 0.4 // intensitas acak agar warna bervariasi
         ]);
-          let baseRadius = 50; // setara 1 km di zoom 12
-          const heatLayer = L.heatLayer(heatPoints, {
-            radius: baseRadius,
-            blur: 25,
-            maxZoom: 15,
-            gradient: { 0.4: "blue", 0.65: "lime", 1: "red" }
-          }).addTo(map);
-          
-          // Skala radius saat zoom berubah
-          map.on('zoomend', () => {
-            const zoom = map.getZoom();
-            const scale = Math.pow(2, zoom - 12); // zoom 12 jadi baseline
-            heatLayer.setOptions({ radius: baseRadius / scale });
-          });
+
+        let baseRadius = 80; // kira-kira 1 km pada zoom 12
+        const heatLayer = L.heatLayer(heatPoints, {
+          radius: baseRadius,
+          blur: 20,
+          maxZoom: 20,
+          minOpacity: 0.3,
+          gradient: {
+            0.2: "blue",
+            0.4: "lime",
+            0.6: "yellow",
+            0.8: "orange",
+            1.0: "red"
+          }
+        }).addTo(map);
+
+        // === Radius dinamis agar tetap proporsional saat zoom ===
+        map.on('zoomend', () => {
+          const zoom = map.getZoom();
+          const scale = Math.pow(1.5, zoom - 12);
+          const newRadius = Math.max(baseRadius * scale, 50);
+          heatLayer.setOptions({ radius: newRadius });
+        });
 
         overlays["Heatmap Gardu"] = heatLayer;
 
-        // Tambahkan kontrol layer (ON / OFF)
+        // === Layer Control (ON/OFF) ===
         L.control.layers(baseLayers, overlays, { collapsed: false }).addTo(map);
 
-        // Tambahkan search gardu
+        // === Search Gardu ===
         const searchControl = new L.Control.Search({
           layer: garduLayer,
           propertyName: 'NAMOBJ',
@@ -129,22 +134,23 @@
         });
         map.addControl(searchControl);
       })
-      .catch(err => console.error("ERROR load gardu:", err));
+      .catch(err => console.error("Gagal memuat data gardu:", err));
 
-    // Geocoder (cari alamat)
+    // === Geocoder (Cari Alamat) ===
     L.Control.geocoder({
       position: 'topleft',
       placeholder: 'Cari alamat...'
     }).addTo(map);
 
-    // Geolocate (lokasi pengguna)
+    // === Geolokasi (Lokasi Pengguna) ===
     L.control.locate({
       position: 'topleft',
       strings: { title: "Temukan Lokasi Saya" },
-      flyTo: true
+      flyTo: true,
+      showCompass: true
     }).addTo(map);
 
-    // Measure tool
+    // === Measure Tool ===
     L.control.measure({
       primaryLengthUnit: 'meters',
       secondaryLengthUnit: 'kilometers',
@@ -152,7 +158,6 @@
       activeColor: '#FF8C00',
       completedColor: '#FF0000'
     }).addTo(map);
-
   </script>
 </body>
 </html>
